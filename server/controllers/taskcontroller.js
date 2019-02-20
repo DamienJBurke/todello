@@ -38,7 +38,7 @@ exports.lists = (req, res) => {
       {
         model: Label,
         as: "labels",
-        attributes: ["id", "title"],
+        attributes: ["id", "title","onSchedule","scheduleStart","scheduleEnd"],
         required: false,
         through: {
           attributes: []

@@ -58,13 +58,6 @@ export default class TasklistItems extends Component {
               style = {this.getDeleteBtnStyle()}
             >
             </input>
-          {/* <button
-            type="image"
-            src="../../public/images/noun_cancel_2035020.png"
-            onClick={this.props.deleteTask.bind(this, this.props.task.taskId)}
-          >
-            (x)
-          </button> */}
         </div>
       </div>
     );

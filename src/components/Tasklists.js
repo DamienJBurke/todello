@@ -35,6 +35,17 @@ export default class Tasklists extends Component {
   testDropDown = (selected="Please select") => {
     this.setState({label: selected})
   };
+
+
+  static getDerivedStateFromProps(nextProps) {
+    return {
+      listTitle:nextProps.tasklist.listTitle
+    }
+
+    // this.setState({
+    //   listTitle: nextProps.tasklist.listTitle,
+    // });
+  }
   /*
    * -------------- Functions -------------------------
    */

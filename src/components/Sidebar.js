@@ -1,6 +1,7 @@
 import React, { Component } from "react";
 import PropTypes from "prop-types";
 import DeleteImage from "../images/noun_cancel_2035020-white.png";
+import settingsImage from "../images/noun_Settings_355459.png";
 export default class Sidebar extends Component {
   state = {
     label: ""
@@ -10,11 +11,6 @@ export default class Sidebar extends Component {
     e.preventDefault();
     this.props.addLabel(this.state.label);
     this.setState({ label: "" });
-  };
-
-  onSubmitDeleteLabel = e => {
-    e.preventDefault();
-    this.props.deleteLabel(1);
   };
 
   onChange = e => this.setState({ [e.target.name]: e.target.value });
@@ -37,22 +33,46 @@ export default class Sidebar extends Component {
           />
         </form>
         <div>
-          {this.props.labels.map((label,index) => (
-            <div key={"mykey"+index} style={this.labelsListSytle()}>
-              <div style={this.labelTextStyle()}>
-              {label.title}
+          {this.props.labels.map((label, index) => (
+            <div key={"mykey" + index} style={this.labelsListSytle()}>
+              <div style={this.labelTextStyle()} onClick={() => {
+                    this.props.getLabelTasklist(label.id);
+                  }}>
+                  {label.title}
               </div>
-                <input
-                  type="image"
-                  alt="test"
-                  src={DeleteImage}
-                  onClick={() => { this.props.deleteLabel(label.id)}}
-                  style={this.getDeleteBtnStyle()}
-                />
+              <input
+                type="image"
+                alt="test"
+                src={DeleteImage}
+                onClick={() => {
+                  this.props.deleteLabel(label.id);
+                }}
+                style={this.getDeleteBtnStyle()}
+              />
 
-              
+              <input
+                type="image"
+                alt="test"
+                src={settingsImage}
+                onClick={() => {this.props.toggleSettingsPopup(label.id)}}
+                style={this.getDeleteBtnStyle()}
+              />
             </div>
           ))}
+          <div style={this.labelsListSytle()}>
+            <div style={this.labelTextStyle()} onClick={() => {
+                  this.props.getLabelTasklist(0);
+                }}>
+                All Lists
+            </div>
+          </div>
+          <div style={this.labelsListSytle()}>
+            <div style={this.labelTextStyle()} onClick={() => {
+                  this.props.getLabelTasklist(null);
+                }}>
+                Scheduled
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -91,31 +111,32 @@ export default class Sidebar extends Component {
       borderBottom: "1px solid gray"
     };
   };
-  labelsListSytle= () => {
+  labelsListSytle = () => {
     return {
       display: "block",
       margin: "0 auto",
       width: "128px",
-      marginTop: "10px",
-    }
-  }
+      marginTop: "10px"
+    };
+  };
   labelTextStyle = () => {
     return {
-      width:"100px",
-      display:"inline-flex",
+      width: "80px",
+      display: "inline-flex",
       color: "white",
       border: "none",
-      borderBottom: "1px solid gray"
+      borderBottom: "1px solid gray",
+      cursor:"pointer",
     };
   };
   getDeleteBtnStyle = () => {
     return {
-    width:"22px",
-    height: "22px",
-    display:"inline-flex",
-    position:"absolute"
-    }
-  }
+      width: "22px",
+      height: "22px",
+      display: "inline-flex",
+      
+    };
+  };
 }
 Sidebar.propTypes = {
   addTaskList: PropTypes.func.isRequired

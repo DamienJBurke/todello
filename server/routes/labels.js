@@ -9,5 +9,9 @@ router.post('/addLabel',LabelController.createLabel)
 
 router.post('/deleteLabel',LabelController.deleteLabel )
 
+router.post('/setSchedule',LabelController.setSchedule )
+
+router.post('/unsetSchedule',LabelController.unsetSchedule )
+
 module.exports = router;
 

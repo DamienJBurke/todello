@@ -3,6 +3,7 @@ import uuidv4 from "uuid/v4";
 import "./App.css";
 import Cards from "./components/Cards";
 import Sidebar from "./components/Sidebar";
+import PopupSettings from "./components/PopupSettings";
 
 class App extends Component {
   state = {
@@ -12,7 +13,10 @@ class App extends Component {
       //   id: uuidv4(),
       //   title:"Work",
       // },
-    ]
+    ],
+    selectedTasklists: [],
+    showPopup: false,
+    popupLabel: null
   };
   /*
   state = {
@@ -50,7 +54,8 @@ class App extends Component {
    * -------------- Functions -------------------------
    */
 
-  fetchRequest = (address, method, dataToUpdate, args = {}) => {
+  fetchRequest = async (address, method, dataToUpdate, args = {}) => {
+    //Create request based on arguments
     let request = {};
     if (method === "POST" || method === "PUT") {
       request = {
@@ -61,46 +66,70 @@ class App extends Component {
         }
       };
     } else if (method === "GET") {
-      request = {
-        method: "GET"
-      };
+      request = { method };
     }
-    fetch(address, request)
-      .then(res => {
-        if (res.status >= 400) {
-          throw new Error("Bad response from server");
-        }
-        return res.json();
-      })
-      .then(data => {
-        this.setState({
-          [dataToUpdate]: data
-        });
-      })
-      .catch(err => {
-        console.log("Caught it!", err);
+    // try request
+    try {
+      const response = await fetch(address, request);
+      if (!response.ok) {
+        throw Error(response.statusText);
+      }
+      const json = await response.json();
+      this.setState({
+        [dataToUpdate]: json
       });
+    } catch (err) {
+      console.log("Caught it!", err);
+    }
   };
 
-  componentDidMount() {
-    this.fetchRequest("tasks", "GET", "tasklists");
-    this.fetchRequest("labels", "GET", "labels");
+  async componentDidMount() {
+    try {
+      await this.fetchRequest("tasks", "GET", "tasklists");
+      await this.getLabelTasklist(null);
+      await this.fetchRequest("labels", "GET", "labels");
+    } catch (err) {
+      console.log("Caught it!", err);
+    }
   }
 
-  markComplete = id => {
+  markComplete = async id => {
+    console.log(id);
+    // this.setState({
+    //   tasklists: this.state.tasklists.map(tasklist => {
+    //     tasklist.tasks.map(task => {
+    //       if (task.taskId === id) {
+    //          task.taskIsComplete = task.taskIsComplete ? true : false;
+    //       }
+    //       return task;
+    //     });
+    //     return tasklist;
+    //   }),
+
+    // });
     this.setState({
-      tasklists: this.state.tasklists.map(tasklist => {
+      selectedTasklists: this.state.selectedTasklists.map(tasklist => {
         tasklist.tasks.map(task => {
           if (task.taskId === id) {
-            task.taskIsComplete = !task.taskIsComplete;
+            //task.taskIsComplete = task.taskIsComplete === true ? console.log(task.taskIsComplete) : console.log(task.taskIsComplete);
+            if (task.taskIsComplete) {
+              task.taskIsComplete = false;
+            } else {
+              task.taskIsComplete = true;
+            }
           }
           return task;
         });
         return tasklist;
       })
     });
-
-    this.fetchRequest("tasks/updateTaskState", "POST", 'tasklists',{taskId:id});
+    try {
+      await this.fetchRequest("tasks/updateTaskState", "POST", "tasklists", {
+        taskId: id
+      });
+    } catch (err) {
+      console.log("Caught it!", err);
+    }
   };
 
   addTask = (listId, title) => {
@@ -117,7 +146,27 @@ class App extends Component {
       })
     });
 
-    this.fetchRequest("tasks/addTask", "POST", 'tasklists',{ listId: listId, title: title });
+    this.setState({
+      selectedTasklists: this.state.selectedTasklists.map(tasklist => {
+        if (tasklist.listId === listId) {
+          tasklist.tasks.push({
+            taskId: uuidv4(),
+            taskTitle: title,
+            isComplete: false
+          });
+        }
+        return tasklist;
+      })
+    });
+
+    this.fetchRequest("tasks/addTask", "POST", "tasklists", {
+      listId: listId,
+      title: title
+    });
+    // this.setState({
+    //   selectedTasklists:this.state.tasklists
+    // });
+    this.getLabelTasklist(null);
   };
 
   updateTaskListName = (listId, title) => {
@@ -129,7 +178,18 @@ class App extends Component {
         return tasklist;
       })
     });
-    this.fetchRequest("tasks/updateListName", "PUT", 'tasklists',{ listId: listId, title: title });
+    this.setState({
+      selectedTasklists: this.state.selectedTasklists.map(tasklist => {
+        if (tasklist.listId === listId) {
+          tasklist.listTitle = title;
+        }
+        return tasklist;
+      })
+    });
+    this.fetchRequest("tasks/updateListName", "PUT", "tasklists", {
+      listId: listId,
+      title: title
+    });
   };
 
   updateTaskName = (taskId, title) => {
@@ -144,7 +204,22 @@ class App extends Component {
         return tasklist;
       })
     });
-    this.fetchRequest("tasks/updateTaskName", "POST", 'tasklists',{ taskId: taskId, title: title });
+
+    this.setState({
+      selectedTasklists: this.state.selectedTasklists.map(tasklist => {
+        tasklist.tasks.map(task => {
+          if (task.taskId === taskId) {
+            task.taskTitle = title;
+          }
+          return task;
+        });
+        return tasklist;
+      })
+    });
+    this.fetchRequest("tasks/updateTaskName", "POST", "tasklists", {
+      taskId: taskId,
+      title: title
+    });
   };
 
   deleteTask = id => {
@@ -154,7 +229,14 @@ class App extends Component {
         return tasklist;
       })
     });
-    this.fetchRequest("tasks/deleteTask", "PUT", 'tasklists',{ id: id });
+
+    this.setState({
+      selectedTasklists: this.state.selectedTasklists.map(tasklist => {
+        tasklist.tasks = [...tasklist.tasks.filter(task => task.taskId !== id)];
+        return tasklist;
+      })
+    });
+    this.fetchRequest("tasks/deleteTask", "PUT", "tasklists", { id: id });
   };
 
   deleteTaskList = id => {
@@ -164,13 +246,18 @@ class App extends Component {
     this.setState({
       tasklists: [
         ...this.state.tasklists.filter(tasklist => tasklist.listId !== id)
+      ],
+      selectedTasklists: [
+        ...this.state.selectedTasklists.filter(
+          tasklist => tasklist.listId !== id
+        )
       ]
     });
     //UPDATE DATABASE
-    this.fetchRequest("tasks/deleteList", "PUT", 'tasklists',{ id: id });
+    this.fetchRequest("tasks/deleteList", "PUT", "tasklists", { id: id });
   };
 
-  addTaskList = async () => {
+  addTaskList = () => {
     //UPDATE THE STATE FIRST
     this.setState({
       tasklists: [
@@ -184,10 +271,22 @@ class App extends Component {
           tasks: [],
           labels: []
         }
+      ],
+      selectedTasklists: [
+        ...this.state.tasklists,
+        {
+          listId: uuidv4(),
+          listTitle: "",
+          isArchived: false,
+          createdAt: "",
+          updatedAt: "",
+          tasks: [],
+          labels: []
+        }
       ]
     });
     //UPDATE DATABASE
-    this.fetchRequest("tasks/addList", "POST", 'tasklists');
+    this.fetchRequest("tasks/addList", "POST", "tasklists");
   };
 
   addLabel = title => {
@@ -200,20 +299,20 @@ class App extends Component {
         }
       ]
     });
-    this.fetchRequest("labels/addLabel", "POST", 'labels',{ title: title });
+    this.fetchRequest("labels/addLabel", "POST", "labels", { title: title });
   };
 
-  deleteLabel = id => {
+  deleteLabel = async id => {
     //UPDATE LABEL STATE
     this.setState({
       labels: this.state.labels.filter(label => label.id !== id)
     });
 
     //REMOVE LABEL FROM DATABASE AND UPDATE STATE
-    this.fetchRequest("labels/deleteLabel", "POST", 'labels',{ id });
+    await this.fetchRequest("labels/deleteLabel", "POST", "labels", { id });
 
     //UPDATE STATE OF TASKLISTS AS TO ENSURE ui SHOWS CORREXT LASBEL-TASKLIST ASSOCIATION.
-    this.fetchRequest("tasks", "GET", 'tasklists');
+    await this.fetchRequest("tasks", "GET", "tasklists");
   };
 
   toggleLabelSelection = (listId, labelId, labelTitle) => {
@@ -240,8 +339,107 @@ class App extends Component {
         return tasklist;
       })
     });
+    this.setState({
+      selectedTasklists: this.state.tasklists
+    });
 
-    this.fetchRequest("tasks/updateTaskListLabels", "POST", 'tasklists',{ listId: listId, labelId: labelId });
+    this.fetchRequest("tasks/updateTaskListLabels", "POST", "tasklists", {
+      listId: listId,
+      labelId: labelId
+    });
+  };
+
+  getLabelTasklist = (labelId = 0) => {
+    //if label is not 0 , then we want to filter
+    if (labelId > 0) {
+      //filter tasks based on if the labelId is in tasklist
+      this.setState({
+        selectedTasklists: this.state.tasklists
+          .map(tasklist => {
+            const labelIds = tasklist.labels.map(el => el.id);
+            if (labelIds.includes(labelId)) {
+              return tasklist;
+            } else {
+              return null;
+            }
+          })
+          .filter(el => el != null)
+      });
+    }
+    // else , just return the full tasklist data
+    else if (labelId === 0) {
+      this.setState({
+        selectedTasklists: this.state.tasklists.map(el => el)
+      });
+    } else {
+      //get the tasklist data according to schedule
+      this.setState({
+        selectedTasklists: this.state.tasklists.filter(tasklist =>
+          this.displayTasklist(tasklist)
+        )
+      });
+    }
+  };
+
+  displayTasklist(tasklist) {
+    if (tasklist.labels.length === 0) {
+      return false;
+    }
+    for (var i = 0; i < tasklist.labels.length; i++) {
+      if (
+        tasklist.labels[i].onSchedule &&
+        this.getScheduledTasklists(
+          tasklist.labels[i].scheduleStart,
+          tasklist.labels[i].scheduleEnd
+        )
+      ) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  getScheduledTasklists(startTime, endTime) {
+    // var startTime = '20:10:10';
+    // var endTime = '22:30:00';
+    const currentDate = new Date();
+
+    let startDate = new Date(currentDate);
+    startDate.setHours(startTime.split(":")[0]);
+    startDate.setMinutes(startTime.split(":")[1]);
+    startDate.setSeconds(startTime.split(":")[2]);
+
+    let endDate = new Date(currentDate);
+    endDate.setHours(endTime.split(":")[0]);
+    endDate.setMinutes(endTime.split(":")[1]);
+    endDate.setSeconds(endTime.split(":")[2]);
+
+    if (endDate - startDate < 0) {
+      endDate.setDate(endDate.getDate() + 1);
+    }
+    return startDate < currentDate && endDate > currentDate;
+  }
+
+  updateLabelSettings = async (labelId, onSch, start, end) => {
+    console.log(onSch);
+    if (onSch) {
+      await this.fetchRequest("labels/setSchedule", "POST", "labels", {
+        id: labelId,
+        startTime: start,
+        endTime: end
+      });
+    } else {
+      await this.fetchRequest("labels/unsetSchedule", "POST", "labels", {
+        id: labelId
+      });
+    }
+  };
+
+  toggleSettingsPopup = labelId => {
+    this.setState({
+      showPopup: !this.state.showPopup,
+      popupLabel: this.state.labels.filter(label => label.id === labelId)
+    });
   };
 
   /*
@@ -259,11 +457,13 @@ class App extends Component {
           labels={this.state.labels}
           addTaskList={this.addTaskList}
           addLabel={this.addLabel}
+          getLabelTasklist={this.getLabelTasklist}
+          toggleSettingsPopup={this.toggleSettingsPopup}
         />
         <div style={this.mainStyle()}>
           <React.Fragment>
             <Cards
-              tasklists={this.state.tasklists}
+              tasklists={this.state.selectedTasklists}
               labels={this.state.labels}
               toggleLabelSelection={this.toggleLabelSelection}
               markComplete={this.markComplete}
@@ -273,6 +473,13 @@ class App extends Component {
               updateTaskListName={this.updateTaskListName}
               updateTaskName={this.updateTaskName}
             />
+            {this.state.showPopup ? (
+              <PopupSettings
+                toggleSettingsPopup={this.toggleSettingsPopup}
+                updateLabelSettings={this.updateLabelSettings}
+                label={this.state.popupLabel}
+              />
+            ) : null}
           </React.Fragment>
         </div>
       </div>
