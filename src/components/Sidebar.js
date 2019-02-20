@@ -1,6 +1,7 @@
 import React, { Component } from "react";
 import PropTypes from "prop-types";
 import DeleteImage from "../images/noun_cancel_2035020-white.png";
+import AddImage from "../images/noun_add_2034915.png";
 import settingsImage from "../images/noun_Settings_355459.png";
 export default class Sidebar extends Component {
   state = {
@@ -17,10 +18,15 @@ export default class Sidebar extends Component {
 
   render() {
     return (
-      <div style={this.sideNavStyle()}>
-        <button onClick={this.props.addTaskList} style={this.newCardStyle()}>
-          (+)
-        </button>
+      <div >
+        <div style={this.titleStyle()}>Todello</div>
+        <input
+                type="image"
+                alt="test"
+                src={AddImage}
+                onClick={this.props.addTaskList}
+                style={this.newCardBtnStyle()}
+        />
         <form onSubmit={this.onSubmitLabel}>
           <input
             type="text"
@@ -35,7 +41,7 @@ export default class Sidebar extends Component {
         <div>
           {this.props.labels.map((label, index) => (
             <div key={"mykey" + index} style={this.labelsListSytle()}>
-              <div style={this.labelTextStyle()} onClick={() => {
+              <div style={this.labelTextStyle(label.id)} onClick={() => {
                     this.props.getLabelTasklist(label.id);
                   }}>
                   {label.title}
@@ -47,7 +53,7 @@ export default class Sidebar extends Component {
                 onClick={() => {
                   this.props.deleteLabel(label.id);
                 }}
-                style={this.getDeleteBtnStyle()}
+                style={this.labelBtnStyle()}
               />
 
               <input
@@ -55,19 +61,19 @@ export default class Sidebar extends Component {
                 alt="test"
                 src={settingsImage}
                 onClick={() => {this.props.toggleSettingsPopup(label.id)}}
-                style={this.getDeleteBtnStyle()}
+                style={this.labelBtnStyle()}
               />
             </div>
           ))}
           <div style={this.labelsListSytle()}>
-            <div style={this.labelTextStyle()} onClick={() => {
+            <div style={this.labelTextStyle(0)} onClick={() => {
                   this.props.getLabelTasklist(0);
                 }}>
                 All Lists
             </div>
           </div>
           <div style={this.labelsListSytle()}>
-            <div style={this.labelTextStyle()} onClick={() => {
+            <div style={this.labelTextStyle(null)} onClick={() => {
                   this.props.getLabelTasklist(null);
                 }}>
                 Scheduled
@@ -77,25 +83,22 @@ export default class Sidebar extends Component {
       </div>
     );
   }
-  sideNavStyle = () => {
-    return {
-      height: "100%" /* Full-height: remove this if you want "auto" height */,
-      width: "160px" /* Set the width of the sidebar */,
-      position: "fixed" /* Fixed Sidebar (stay in place on scroll) */,
-      zIndex: "1" /* Stay on top */,
-      top: "10vh" /* Stay at the top */,
-      left: "0",
-      backgroundColor: "#282c34" /* Black */,
-      overflowX: "hidden" /* Disable horizontal scroll */,
-      paddingTop: "20px"
-    };
-  };
+  titleStyle = () => {
+    return{
+    color: "white",
+    textAlign: "center",
+    margin:'16px auto',
+    display:"block",
 
-  newCardStyle = () => {
+    }
+  }
+
+  newCardBtnStyle = () => {
     return {
-      padding: "10px",
       display: "block",
-      margin: "0 auto"
+      width: "80px",
+      height: "80px",
+      margin: "16px auto"
     };
   };
 
@@ -103,8 +106,7 @@ export default class Sidebar extends Component {
     return {
       width: "80%",
       display: "block",
-      margin: "0 auto",
-      marginTop: "10px",
+      margin: "10px auto",
       backgroundColor: "#282c34",
       color: "white",
       border: "none",
@@ -114,27 +116,27 @@ export default class Sidebar extends Component {
   labelsListSytle = () => {
     return {
       display: "block",
-      margin: "0 auto",
       width: "128px",
-      marginTop: "10px"
+      margin: "5px auto"
     };
   };
-  labelTextStyle = () => {
+  labelTextStyle = (id) => {
+    const weight = this.props.selectedLabelId === id ? 'bold' : 'normal'
     return {
       width: "80px",
       display: "inline-flex",
       color: "white",
       border: "none",
-      borderBottom: "1px solid gray",
       cursor:"pointer",
+      fontWeight:weight
     };
   };
-  getDeleteBtnStyle = () => {
+  labelBtnStyle = () => {
     return {
       width: "22px",
       height: "22px",
       display: "inline-flex",
-      
+      verticalAlign:'bottom'
     };
   };
 }

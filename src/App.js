@@ -16,7 +16,8 @@ class App extends Component {
     ],
     selectedTasklists: [],
     showPopup: false,
-    popupLabel: null
+    popupLabel: null,
+    selectedLabelId: null
   };
   /*
   state = {
@@ -132,19 +133,19 @@ class App extends Component {
     }
   };
 
-  addTask = (listId, title) => {
-    this.setState({
-      tasklists: this.state.tasklists.map(tasklist => {
-        if (tasklist.listId === listId) {
-          tasklist.tasks.push({
-            taskId: uuidv4(),
-            taskTitle: title,
-            isComplete: false
-          });
-        }
-        return tasklist;
-      })
-    });
+  addTask = async (listId, title) => {
+    // this.setState({
+    //   tasklists: this.state.tasklists.map(tasklist => {
+    //     if (tasklist.listId === listId) {
+    //       tasklist.tasks.push({
+    //         taskId: uuidv4(),
+    //         taskTitle: title,
+    //         isComplete: false
+    //       });
+    //     }
+    //     return tasklist;
+    //   })
+    // });
 
     this.setState({
       selectedTasklists: this.state.selectedTasklists.map(tasklist => {
@@ -158,15 +159,23 @@ class App extends Component {
         return tasklist;
       })
     });
+    try {
+      await this.fetchRequest("tasks/addTask", "POST", "tasklists", {
+        listId: listId,
+        title: title
+      });
+      this.getLabelTasklist(this.state.selectedLabelId);
+    }catch(err){
 
-    this.fetchRequest("tasks/addTask", "POST", "tasklists", {
-      listId: listId,
-      title: title
-    });
+    }
+    // this.fetchRequest("tasks/addTask", "POST", "tasklists", {
+    //   listId: listId,
+    //   title: title
+    // });
     // this.setState({
     //   selectedTasklists:this.state.tasklists
     // });
-    this.getLabelTasklist(null);
+    
   };
 
   updateTaskListName = (listId, title) => {
@@ -273,7 +282,7 @@ class App extends Component {
         }
       ],
       selectedTasklists: [
-        ...this.state.tasklists,
+        ...this.state.selectedTasklists,
         {
           listId: uuidv4(),
           listTitle: "",
@@ -363,20 +372,26 @@ class App extends Component {
               return null;
             }
           })
-          .filter(el => el != null)
+          .filter(el => el != null),
+          selectedLabelId:labelId
+
       });
     }
     // else , just return the full tasklist data
     else if (labelId === 0) {
       this.setState({
-        selectedTasklists: this.state.tasklists.map(el => el)
+        selectedTasklists: this.state.tasklists.map(el => el),
+        selectedLabelId:labelId
+
       });
     } else {
       //get the tasklist data according to schedule
       this.setState({
         selectedTasklists: this.state.tasklists.filter(tasklist =>
-          this.displayTasklist(tasklist)
-        )
+          this.displayTasklist(tasklist),
+          
+        ),
+        selectedLabelId:labelId
       });
     }
   };
@@ -449,9 +464,7 @@ class App extends Component {
   render() {
     return (
       <div>
-        <header className="App-header">
-          <div>Todello</div>
-        </header>
+        <div style={this.sideNavStyle()}>
         <Sidebar
           deleteLabel={this.deleteLabel}
           labels={this.state.labels}
@@ -459,8 +472,12 @@ class App extends Component {
           addLabel={this.addLabel}
           getLabelTasklist={this.getLabelTasklist}
           toggleSettingsPopup={this.toggleSettingsPopup}
+          selectedLabelId={this.state.selectedLabelId}
         />
+        </div>
+        
         <div style={this.mainStyle()}>
+          
           <React.Fragment>
             <Cards
               tasklists={this.state.selectedTasklists}
@@ -492,7 +509,22 @@ class App extends Component {
 
   mainStyle = () => {
     return {
-      marginLeft: "160px"
+      marginLeft: "150px",
+    };
+  };
+  sideNavStyle = () => {
+    return {
+      height: "100%" /* Full-height: remove this if you want "auto" height */,
+      width: "150px" /* Set the width of the sidebar */,
+      position: "fixed" /* Fixed Sidebar (stay in place on scroll) */,
+      zIndex: "2" /* Stay on top */,
+      top: "0" /* Stay at the top */,
+      left: "0",
+      backgroundColor: "#282c34" /* Black */,
+      overflowX: "hidden" /* Disable horizontal scroll */,
+      padding:"10px",
+      boxShadow:
+      "0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19)",
     };
   };
 }
