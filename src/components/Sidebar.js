@@ -89,6 +89,8 @@ export default class Sidebar extends Component {
     textAlign: "center",
     margin:'16px auto',
     display:"block",
+    fontWeight:"bold",
+    fontSize:"22px"
 
     }
   }

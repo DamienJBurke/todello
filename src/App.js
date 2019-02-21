@@ -1,9 +1,9 @@
 import React, { Component } from "react";
 import uuidv4 from "uuid/v4";
-import "./App.css";
 import Cards from "./components/Cards";
 import Sidebar from "./components/Sidebar";
 import PopupSettings from "./components/PopupSettings";
+
 
 class App extends Component {
   state = {
@@ -134,18 +134,6 @@ class App extends Component {
   };
 
   addTask = async (listId, title) => {
-    // this.setState({
-    //   tasklists: this.state.tasklists.map(tasklist => {
-    //     if (tasklist.listId === listId) {
-    //       tasklist.tasks.push({
-    //         taskId: uuidv4(),
-    //         taskTitle: title,
-    //         isComplete: false
-    //       });
-    //     }
-    //     return tasklist;
-    //   })
-    // });
 
     this.setState({
       selectedTasklists: this.state.selectedTasklists.map(tasklist => {
@@ -168,14 +156,6 @@ class App extends Component {
     }catch(err){
 
     }
-    // this.fetchRequest("tasks/addTask", "POST", "tasklists", {
-    //   listId: listId,
-    //   title: title
-    // });
-    // this.setState({
-    //   selectedTasklists:this.state.tasklists
-    // });
-    
   };
 
   updateTaskListName = (listId, title) => {
@@ -298,7 +278,7 @@ class App extends Component {
     this.fetchRequest("tasks/addList", "POST", "tasklists");
   };
 
-  addLabel = title => {
+  addLabel = async title => {
     this.setState({
       labels: [
         ...this.state.labels,
@@ -308,7 +288,13 @@ class App extends Component {
         }
       ]
     });
-    this.fetchRequest("labels/addLabel", "POST", "labels", { title: title });
+
+    try{
+      await this.fetchRequest("labels/addLabel", "POST", "labels", { title: title });
+
+    }catch(err){
+      console.log("Caught it!", err);
+    }
   };
 
   deleteLabel = async id => {
@@ -317,45 +303,34 @@ class App extends Component {
       labels: this.state.labels.filter(label => label.id !== id)
     });
 
-    //REMOVE LABEL FROM DATABASE AND UPDATE STATE
-    await this.fetchRequest("labels/deleteLabel", "POST", "labels", { id });
+    try{
+      //REMOVE LABEL FROM DATABASE AND UPDATE STATE
+      await this.fetchRequest("labels/deleteLabel", "POST", "labels", { id });
 
-    //UPDATE STATE OF TASKLISTS AS TO ENSURE ui SHOWS CORREXT LASBEL-TASKLIST ASSOCIATION.
-    await this.fetchRequest("tasks", "GET", "tasklists");
+      //UPDATE STATE OF TASKLISTS AS TO ENSURE ui SHOWS CORREXT LASBEL-TASKLIST ASSOCIATION.
+      await this.fetchRequest("tasks", "GET", "tasklists");
+
+      this.getLabelTasklist(this.state.selectedLabelId)
+
+    }catch(err){
+      console.log("Caught it!", err);
+    }
+
   };
 
-  toggleLabelSelection = (listId, labelId, labelTitle) => {
-    this.setState({
-      tasklists: this.state.tasklists.map(tasklist => {
-        if (tasklist.listId === listId) {
-          //Check if labelId is already tasklist labels
-          const labelIds = tasklist.labels.map(el => el.id);
+  toggleLabelSelection = async (listId, labelId, labelTitle) => {
+    try{
+      await this.fetchRequest("tasks/updateTaskListLabels", "POST", "tasklists", {
+        listId: listId,
+        labelId: labelId
+      });
 
-          //if true, remvoe from list in tasklist
-          if (labelIds.includes(labelId)) {
-            tasklist.labels = tasklist.labels.filter(item => {
-              return item.id !== labelId;
-            });
-          }
-          // add to list
-          else {
-            tasklist.labels.push({
-              id: labelId,
-              title: labelTitle
-            });
-          }
-        }
-        return tasklist;
-      })
-    });
-    this.setState({
-      selectedTasklists: this.state.tasklists
-    });
+      this.getLabelTasklist(this.state.selectedLabelId)
+    }catch(err){
+      console.log("Caught it!", err);
+    }    
 
-    this.fetchRequest("tasks/updateTaskListLabels", "POST", "tasklists", {
-      listId: listId,
-      labelId: labelId
-    });
+    
   };
 
   getLabelTasklist = (labelId = 0) => {
@@ -463,7 +438,7 @@ class App extends Component {
 
   render() {
     return (
-      <div>
+      <div style={this.appStyle()}>
         <div style={this.sideNavStyle()}>
         <Sidebar
           deleteLabel={this.deleteLabel}
@@ -507,6 +482,13 @@ class App extends Component {
    * -------------- Styles -------------------------
    */
 
+  appStyle = () => {
+    return{
+      ':hover':{
+        outline:'none'
+      }
+    }
+  } 
   mainStyle = () => {
     return {
       marginLeft: "150px",
